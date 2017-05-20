@@ -61,6 +61,38 @@ remaining string is then applied to the parser g and then the result is transfor
 > runParser :: Parser a -> String -> [(a, String)]
 > runParser (Parser p) = p 
 
+Alternative Instance 
+--------------------
+
+Recall:
+
+> class Functor f => Alternative f where
+>   -- | This is the identity of <|>
+>   empty :: f a 
+>   -- | An associative binary operation.
+>   (<|>) :: f a -> f a -> f a
+
+Alternatives is a subclass of applicatives and the above functions MUST
+be defined as a minimum. "empty" is an applicative compution with no results. 
+(<|>) is used to combine two computations.
+
+List is an alternative instance also:
+
+> instance Alternative [] where
+>   empty = []
+>   (<|>) = (++)
+
+And so is a parser!
+
+> instance Alternative Parser where
+>   empty = Parser $ \_ -> []
+>   (Parser p) <|> (Parser q) = Parser $ \ts -> (p ts) <|> (q ts)
+
+The identity of (<|>) is equivalent to the failure parser.
+The (<|>) instance is more interesting. This definition implies
+that given an input string we will apply both parses to it
+then combine the results using the alternative instance for list.
+
 Monad Instance
 --------------
 
@@ -79,38 +111,3 @@ Monads deal with sequencing actions.
 
 (>>=) is interesting. The idea is that we will apply p and sequence another parse with f, this is what is 
 captured in the defintion. After applying our parser p, we will use the the result to then sequence the next parser.
-
-
-Parsers
-=======
-
-A parser that fails.
-
-> failure :: Parser a
-> failure = Parser (\_ -> [])
-
-A simple parser that returns the next item in the input stream.
-
-> item :: Parser Char
-> item = Parser (\ts -> case ts of 
->                         []     -> []
->                         (x:xs) -> [(x, xs)])
-
-This parser checks if the first character satisfies some predicate.
-
-> satisfy :: (Char -> Bool) -> Parser Char
-> satisfy p = item >>= \x -> if p x
->                               then produce x 
->                               else failure
-
-This will return a single char if it satisfies a predicate.
-
-> char :: Char -> Parser Char
-> char c = satisfy (c ==)
-
-This parser has the ability to recognised strings (This is built on the 'char'
-combinator). To parse the string we will first the first letter then we will 
-recursively parse the remainder of the string.
-
-> string :: String -> Parser String
-> string (x:xs) = char x >>= \c -> string xs >>= \c' -> produce (c:c')

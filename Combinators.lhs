@@ -46,14 +46,6 @@ leftmost applicative.
 > (*>) :: Applicative f => f a -> f b -> f b
 > (*>) = undefined
 
-Recall:
-
-> class Functor f => Alternative f where
->   -- | This is the identity of <|>
->   empty :: f a 
->   -- | An associative binary operation.
->   (<|>) :: f a -> f a -> f a
-
 > many :: Alternative f => f a -> f [a]
 > many = undefined
 
