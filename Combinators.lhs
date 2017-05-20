@@ -43,14 +43,5 @@ Note: Function application has higher precedence so fmap f a <*> b == (fmap f a)
 This combinator is used to sequence actions while ignore the results from the
 leftmost applicative.
 
-> (*>) :: Applicative f => f a -> f b -> f b
-> (*>) = undefined
-
-> many :: Alternative f => f a -> f [a]
-> many = undefined
-
-> some :: Alternative f => f a -> f [a]
-> some = undefined
-
 > sepBy :: Alternative f => f a -> f sep -> f a 
 > sepBy = undefined

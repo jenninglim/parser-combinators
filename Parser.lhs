@@ -67,17 +67,39 @@ Alternative Instance
 
 Recall:
 
-> class Functor f => Alternative f where
+> class Applicative f => Alternative f where
 >   -- | This is the identity of <|>
 >   empty :: f a 
 >   -- | An associative binary operation.
 >   (<|>) :: f a -> f a -> f a
 
 Alternatives is a subclass of applicatives and the above functions MUST
-be defined as a minimum.
+be defined as a minimum. Alternatives must satisfy the following laws:
 
- * "empty" is an applicative compution with no results. 
- * (<|>) is used to combine two computations.
+ * empty <|> q = q
+ * q <|> empty = q
+
+Note: "empty" is an applicative compution with no results. 
+      (<|>) is used to combine two computations.
+
+>   -- | Zero or more.
+>   many :: f a -> f [a]
+>   many v = some v <|> pure []
+
+>   -- | One or more.
+>   some :: f a -> f [a]
+>   some v = (:) <$> v <*> many v
+
+Notice that 'many' and 'some' are mutually recursive.
+Intuitively, since many is zero or more, we have pure [] to capture the idea of zero,
+then one or more will be captured by some. This is equivalent to the BNF
+operation *.
+
+In the definition of some, we have one or more. This is equivalent to
+having one occuring followed by zero or more. Thus some will be defined
+in terms of many and is the same as first sequencing some action
+followed by many of that action with its results combined using the (<*>).
+This is equivalent to the BNF operation +.
 
 List is an alternative instance also:
 
@@ -89,13 +111,17 @@ And so is a parser!
 
 > instance Alternative Parser where
 >   empty = Parser $ \_ -> []
->   (Parser p) <|> (Parser q) = Parser $ \ts -> (p ts) <|> (q ts)
+>   (Parser p) <|> (Parser q) = Parser $ \ts -> case p ts of
+>                                                 [] -> q ts
+>                                                 xs -> xs
+>   many v = some v <|> produce []
+>   some v = (:) <$> v <*> many v
 
 The identity of (<|>) is equivalent to the failure parser.
 
 The (<|>) definition is more interesting. This definition implies
-that given an input string we will apply both parsers to it
-then we will combine the results using the alternative instance for list.
+that given an input string we will apply the first parser
+then if p fails without consuing any input, parser q is tried.
 
 Monad Instance
 --------------
@@ -109,10 +135,15 @@ Recall:
 Monads deal with sequencing actions.
 (This is a simplification and is enough for this course)
 
+Monads must satisfy several laws:
+
+ * return x >>= f = f x -- Right identity (or unit).
+ * m x >>= return = m x -- Left identity (or unit).
+ * (m x >>= f) >>= g == m x >>= (\x -> f x >>= g) -- Associativity.
 > instance Monad Parser where
 >   return = pure
 >   (Parser p) >>= f = Parser (\ts -> concat [ runParser (f x) ts' | (x, ts') <- p ts ])
 
-(>>=) is interesting. The idea is that we will apply p and sequence another parse with f, this is what is 
-captured in the defintion. After applying our parser p, we will use the result (from parser p) to sequence
-the mext parser by applying f.
+(>>=) is interesting. The idea is that we will apply p and sequence another parse with f,
+this is what is captured in the defintion. After applying our parser p, we will use the
+result (from parser p) to sequence the next parser by applying f.
