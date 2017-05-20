@@ -4,33 +4,57 @@
 Combinators
 ===========
 
-A parser that fails.
+Combinators have two definitions:
 
-> failure :: Parser a
-> failure = Parser (\_ -> [])
+ * A function or defintion with no free variables - a variable that is not bound.
 
-A simple parser that returns the next item in the input stream.
+ * A style of organising libraries centered around the idea of combining. This
+   builds a complex set of patterns from small set of simple primitives.
 
-> item :: Parser Char
-> item = Parser (\ts -> case ts of 
->                         []     -> []
->                         (x:xs) -> [(x, xs)])
+> (<$>) :: Functor f => (a -> b) -> f a -> f b
+> f <$> g = fmap f g
 
-This parser checks if the first character satisfies some predicate.
+This is an infix fmap.
 
-> satisfy :: (Char -> Bool) -> Parser Char
-> satisfy p = item >>= \x -> if p x
->                               then produce x 
->                               else failure
+> (<$) :: Functor f => a -> f b -> f a
+> (<$) = fmap . const
 
-This will return a single char if it satisfies a predicate.
+This will first apply the `const` (a -> b -> a) to the first argument. This function intuitively
+takes two argument and simply ignore the results from the second and returns the
+first result. Thus, const can be partially applied to produce a function of type
+(b -> a) which can be lifted using fmap.
 
-> char :: Char -> Parser Char
-> char c = satisfy (c==)
+This combinator is used to "ignore" the results from the leftmost functor.
+This works by replacing all locations in the input with the same value.
 
-This parser has the ability to recognised strings (This is built on the 'char'
-combinator). To parse the string we will first the first letter then we will 
-recursively parse the remainder of the string.
+< (<*>) :: Applicative f => f (a -> b) -> f a -> f b
 
-> string :: String -> Parser String
-> string (x:xs) = char x >>= \c -> string xs >>= \c' -> produce (c:c')
+> (<*) :: Applicative f => f a -> f b -> f a
+> (<*) = liftA2 const
+>    where liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+>          liftA2 f a b = fmap f a <*> b
+
+'liftA2' is a function that lifts a function with two arguments such that it
+can be applied to applicatives. This is very similar to (<*>) except with
+two arguments.
+
+Note: Function application has higher precedence so fmap f a <*> b == (fmap f a) <*> b.
+
+This combinator is used to sequence actions while ignore the results from the
+leftmost applicative.
+
+> (*>) :: Applicative f => f a -> f b -> f b
+
+Recall:
+
+> (<|>) :: Alternative f => f a -> f a -> f a
+> (<|>) = undefined
+
+> many :: Alternative f => f a -> f [a]
+> many = undefined
+
+> some :: Alternative f => f a -> f [a]
+> some = undefined
+
+> sepBy :: Alternative f => f a -> f sep -> f a 
+> sepBy = undefined
