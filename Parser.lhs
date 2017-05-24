@@ -35,7 +35,12 @@ Recall:
 <    pure  :: a -> f a
 <    (<*>) :: f (a -> b) -> f a -> f b
 
-Applicatives are useful for sequencing effects.
+Consider,
+
+< pure f <*> u_1 <*> .... <*> u_n
+
+Applicatives are useful for sequencing effects. Applicative programming computations have a fixed
+structure (given by the pure) and a sequence of subcomputations (given by the effectful arguments).
 
 We have for the parser instance:
 
@@ -132,14 +137,16 @@ Recall:
 <   return :: a -> m a
 <   (>>=) :: m a -> (a -> m b) -> m b
 
-Monads deal with sequencing actions.
-(This is a simplification and is enough for this course)
+Monads deal with sequencing actions. The power lies in the definition of bind.
+Intuitively, (>>=) allows the value returned from on computation to influence
+the choice of another compared to (<*>) where it simply just sequencing effects.
 
 Monads must satisfy several laws:
 
  * return x >>= f = f x -- Right identity (or unit).
  * m x >>= return = m x -- Left identity (or unit).
  * (m x >>= f) >>= g == m x >>= (\x -> f x >>= g) -- Associativity.
+
 > instance Monad Parser where
 >   return = pure
 >   (Parser p) >>= f = Parser (\ts -> concat [ runParser (f x) ts' | (x, ts') <- p ts ])
